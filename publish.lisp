@@ -87,6 +87,7 @@
    (name :initarg :name :reader handler-name)
    (interface :initarg :interface :reader handler-interface)
    (input-signature :initarg :input-signature :reader handler-input-signature)
+   (input-names :initarg :input-names :reader handler-input-names)
    (function :initarg :function :reader handler-function)))
 
 (defgeneric handler-full-lisp-name (handler))
@@ -105,7 +106,7 @@ sans dashes."
 (defclass method-handler (handler)
   ((output-signature :initarg :output-signature :reader handler-output-signature)))
 
-(defun register-dbus-method (object-name method-name name-string interface parameter-types return-types handler)
+(defun register-dbus-method (object-name method-name name-string interface parameter-types parameter-names return-types handler)
   (check-type method-name symbol)
   (check-type name-string string)
   (check-type interface string)
@@ -119,6 +120,7 @@ sans dashes."
                          :name name-string
                          :interface interface
                          :input-signature parameter-types
+                         :input-names parameter-names
                          :output-signature return-types
                          :function handler))
     (list object-name method-name)))
@@ -142,6 +144,7 @@ sans dashes."
                            ,name-string
                            ,interface
                            ',parameter-types
+                           ',parameter-names
                            ',return-types
                            (lambda (,@parameter-names)
                              ,@body))))
@@ -149,7 +152,7 @@ sans dashes."
 (defclass signal-handler (handler)
   ())
 
-(defun register-dbus-signal-handler (object-name handler-name name-string interface parameter-types handler)
+(defun register-dbus-signal-handler (object-name handler-name name-string interface parameter-types parameter-names handler)
   (check-type handler-name symbol)
   (check-type name-string string)
   (check-type interface string)
@@ -163,6 +166,7 @@ sans dashes."
                          :name name-string
                          :interface interface
                          :input-signature parameter-types
+                         :input-names parameter-names
                          :function handler))
     (list object-name handler-name)))
 
@@ -185,6 +189,7 @@ sans dashes."
                                    ,name-string
                                    ,interface
                                    ',parameter-types
+                                   ',parameter-names
                                    (lambda (,@parameter-names)
                                      ,@body))))
 
