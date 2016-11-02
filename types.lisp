@@ -13,6 +13,7 @@
    #:unpack
    #:valid-body-p
    #:define-dbus-type
+   #:format-sigexp-to-stream
    #:pack-string
    #:unpack-string
    #:pack-array
