@@ -22,6 +22,7 @@
 (defun publish-example ()
   (handler-case
       (with-open-bus (bus (session-server-addresses))
+        (request-name bus "org.adeht.publish-example" :replace-existing :allow-replacement)
         (format t "Bus connection name: ~A~%" (bus-name bus))
         (publish-objects (bus-connection bus)))
     (end-of-file ()
