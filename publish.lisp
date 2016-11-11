@@ -325,3 +325,53 @@ sans dashes."
                      (message-serial message) (message-sender message) nil
                      "s" (list error-description))
      connection)))
+
+
+(defun collect-methods-by-interface (dbus-objects)
+  (loop with result = (make-hash-table :test #'equal)
+        for sym in dbus-objects
+        for dbo = (find-dbus-object sym)
+        do (loop for m-h being the hash-values of (dbus-object-method-handlers dbo)
+                 do (push m-h 
+                          (gethash (handler-interface m-h)
+                                   result
+                                   ())))
+        finally (return result)))
+
+(defun method-xml-description (m)
+  (cxml:with-element "method"
+    (cxml:attribute "name" (handler-name m))
+    (flet
+      ((one-arg (name dir type)
+         (cxml:with-element "arg"
+           (cxml:attribute "direction" dir)
+           (if name
+             (cxml:attribute "name" (stringify-lisp-name name)))
+           (cxml:attribute "type" 
+             (with-output-to-string (s)
+               (format-sigexp-to-stream (list type) s))))))
+      (loop for type in (handler-input-signature m)
+            for name in (handler-input-names m)
+            do (one-arg name "in" type))
+      (loop for type in (handler-output-signature m)
+            do (one-arg nil "out" type)))))
+
+
+(define-dbus-object default-introspect
+  (:path "/"))
+
+(define-dbus-method (default-introspect introspect) () (:string)
+  (:interface "org.freedesktop.DBus.Introspectable")
+  (let ((interfaces-methods (collect-methods-by-interface
+                              *all-dbus-objects*)))
+    (cxml:with-xml-output (cxml:make-string-sink)
+      (cxml:doctype "node" 
+                    "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                    "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd")
+      (cxml:with-element "node"
+        (loop for interface-name being the hash-keys of interfaces-methods
+              using (hash-value methods)
+              do (cxml:with-element "interface"
+                   (cxml:attribute "name" interface-name)
+                   (loop for m in methods
+                         do (method-xml-description m))))))))
